@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Text, Date, ForeignKey, Time, Enum, UniqueConstraint, LargeBinary
 from sqlalchemy.orm import relationship
-from database import Base
+from .database import Base
 import datetime
 
 # --- CORE USER & AUTH ---
@@ -208,6 +208,7 @@ class ProjectTask(Base):
     status = Column(String(20), default="pending")
     deadline = Column(DateTime, nullable=True) # New: Deadline for Team Lead
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
 
     project = relationship("Project", back_populates="tasks")
     assignees = relationship("ProjectTaskAssignee", back_populates="task")
@@ -218,6 +219,7 @@ class ProjectAssignment(Base):
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
     employee_id = Column(String(60), ForeignKey("users.employee_id"), nullable=False)
+    employee_id_hash = Column(String(64), nullable=True, index=True)
 
     project = relationship("Project", back_populates="assignments")
     employee = relationship("User", primaryjoin="User.employee_id == ProjectAssignment.employee_id")
@@ -228,6 +230,7 @@ class ProjectTaskAssignee(Base):
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("project_tasks.id"), nullable=False)
     employee_id = Column(String(60), ForeignKey("users.employee_id"), nullable=False)
+    employee_id_hash = Column(String(64), nullable=True, index=True)
 
     task = relationship("ProjectTask", back_populates="assignees")
     employee = relationship("User", primaryjoin="User.employee_id == ProjectTaskAssignee.employee_id")

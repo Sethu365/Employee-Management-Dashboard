@@ -359,10 +359,28 @@ canvas {
       <div class="space-y-1">
           <label class="label-mono">Project Nomenclature</label>
           <input type="text" name="name" required class="w-full px-4 py-3 border border-slate-200 focus:border-indigo-500 outline-none text-sm">
+          <input type="hidden" name="department" value="{{ user.department }}">
       </div>
       <div class="space-y-1">
           <label class="label-mono">Operational Scope</label>
           <textarea name="description" rows="3" class="w-full px-4 py-3 border border-slate-200 focus:border-indigo-500 outline-none text-sm resize-none"></textarea>
+      </div>
+      <div class="space-y-1">
+          <label class="label-mono">Unit Linkage</label>
+          <select name="team_id" class="w-full px-4 py-3 border border-slate-200 focus:border-indigo-500 outline-none text-sm bg-white">
+            <option value="">-- No Unit --</option>
+            {% if teams %}
+              {% for team in teams %}
+                <option value="{{ team.id }}">{{ team.name }}</option>
+              {% endfor %}
+            {% elif team_data %}
+              {% for item in team_data %}
+                <option value="{{ item.team.id }}">{{ item.team.name }}</option>
+              {% endfor %}
+            {% else %}
+              <option value="" disabled>-- No units available --</option>
+            {% endif %}
+          </select>
       </div>
       <div class="space-y-1">
           <label class="label-mono">Target Deadline</label>

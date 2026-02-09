@@ -74,8 +74,8 @@
       <p class="text-sm text-slate-500">Track upcoming, ongoing, and completed meetings.</p>
     </div>
     <div class="flex gap-2">
-      <a href="/manager/dashboard" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-semibold">Back</a>
-      <a href="/manager/dashboard" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">New Meeting</a>
+      <a href="/manager/manage_teams" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-semibold">Back</a>
+      <a href="/manager/manage_teams" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">New Meeting</a>
     </div>
   </div>
 
@@ -193,7 +193,7 @@
 
           <div class="flex gap-2 flex-wrap">
             <button type="button" id="editMeetingBtn" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold">Edit</button>
-            <form id="deleteMeetingForm" action="/manager/meeting/delete" method="POST">
+            <form id="deleteMeetingForm" action="/manager/meeting/delete" method="POST" data-confirm="Delete this meeting?">
               <input type="hidden" name="meeting_id" id="deleteMeetingId">
               <button type="submit" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">Delete</button>
             </form>
@@ -369,12 +369,6 @@
     navigator.clipboard.writeText(detailLink.href);
     copyLinkBtn.textContent = 'Copied';
     setTimeout(() => { copyLinkBtn.textContent = 'Copy Link'; }, 1500);
-  });
-
-  deleteMeetingForm?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const ok = window.showConfirm ? await window.showConfirm('Delete this meeting?') : confirm('Delete this meeting?');
-    if (ok) deleteMeetingForm.submit();
   });
 
   viewAttendeesBtn?.addEventListener('click', () => {

@@ -4,14 +4,14 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 
-from database import get_db
-from models import User
+from .database import get_db
+from .models import User
 
 # ================= CONFIG =================
 SECRET_KEY = "CHANGE_THIS_SECRET"
 ALGORITHM = "HS256"
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
 # ================= PASSWORD UTILS =================
 def hash_password(password: str) -> str:

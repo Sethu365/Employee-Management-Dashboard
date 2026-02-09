@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 from jose import jwt
 
-from database import get_db
-from auth import authenticate_user, SECRET_KEY, ALGORITHM
+from .database import get_db
+from .auth import authenticate_user, SECRET_KEY, ALGORITHM
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 

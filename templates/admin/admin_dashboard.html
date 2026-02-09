@@ -146,7 +146,7 @@
 
     <div class="border border-[var(--border)] bg-[var(--panel)] p-8 border-t-4 border-red-600">
       <h3 class="text-xs font-black uppercase tracking-[0.3em] mb-6 text-red-600">Deactivate Account</h3>
-      <form method="post" action="/admin/remove_employee" class="flex gap-4">
+      <form method="post" action="/admin/remove_employee" data-confirm="Remove this employee account?" class="flex gap-4">
         <input class="flex-1 border border-[var(--border)] p-4 text-sm font-bold bg-[var(--bg)] outline-none focus:border-red-600" name="employee_id" placeholder="Enter Employee ID" required />
         <button class="px-8 bg-red-600 text-white font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all">Remove</button>
       </form>

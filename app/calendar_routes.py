@@ -11,8 +11,8 @@ import datetime
 import holidays
 import re
 
-from database import get_db
-from models import User, CalendarEvent, CalendarSettings, LeaveRequest, OfficeHoliday, Task, ProjectTask, ProjectTaskAssignee, Meeting, ProjectMeetingAssignee
+from .database import get_db
+from .models import User, CalendarEvent, CalendarSettings, LeaveRequest, OfficeHoliday, Task, ProjectTask, ProjectTaskAssignee, Meeting, ProjectMeetingAssignee
 import hashlib
 
 
@@ -543,7 +543,7 @@ def register_calendar_routes(app: FastAPI, templates, get_current_user):
         if user.role != "admin":
             raise HTTPException(status_code=403, detail="Admin only")
         employees = db.query(User).order_by(User.id.asc()).all()
-        from models import Team
+        from .models import Team
         teams = db.query(Team).order_by(Team.id.asc()).all()
         return JSONResponse({
             "employees": [

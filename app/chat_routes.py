@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from chat_store import add_message, get_messages, get_total_unread
-from auth import get_current_user_from_session
+from .chat_store import add_message, get_messages, get_total_unread
+from .auth import get_current_user_from_session
 
 router = APIRouter(prefix="/api/chat")
 

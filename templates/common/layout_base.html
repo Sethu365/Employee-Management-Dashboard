@@ -260,7 +260,7 @@
         </div>
       </div>
       {% endif %}
-      <a href="/logout" class="mt-2 flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors uppercase">
+      <a href="/logout" data-confirm="Log out of TeamSync?" class="mt-2 flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors uppercase">
         <i class="bi bi-power"></i> Logout
       </a>
     </div>
@@ -457,6 +457,42 @@ setInterval(updateClock, 1000);
       const ok = window.showConfirm ? await window.showConfirm(confirmMessage) : confirm(confirmMessage);
       if (ok) form.submit();
     });
+
+    function closeNearestModal(element) {
+      if (!element) return;
+      const modal = element.closest('[id$="Modal"], .fixed, [data-modal-root]');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    document.addEventListener('click', async (event) => {
+      const closeTrigger = event.target.closest('[data-modal-close], .modal-close');
+      if (closeTrigger) {
+        event.preventDefault();
+        closeNearestModal(closeTrigger);
+        return;
+      }
+
+      if (event.target.classList && event.target.classList.contains('modal-backdrop')) {
+        closeNearestModal(event.target);
+        return;
+      }
+
+      const confirmEl = event.target.closest('[data-confirm]');
+      if (!confirmEl) return;
+      if (confirmEl.tagName === 'FORM') return;
+      if (confirmEl.tagName === 'BUTTON' && confirmEl.closest('form')) return;
+
+      event.preventDefault();
+      const confirmMessage = confirmEl.getAttribute('data-confirm') || 'Please confirm.';
+      const ok = window.showConfirm ? await window.showConfirm(confirmMessage) : confirm(confirmMessage);
+      if (!ok) return;
+
+      if (confirmEl.tagName === 'A' && confirmEl.href) {
+        window.location.href = confirmEl.href;
+      }
+    });
     // Theme Switcher Logic
     const toggle = document.getElementById('themeToggle');
     const icon = document.getElementById('themeIcon');
@@ -516,6 +552,7 @@ function updateChatBadge() {
 setInterval(updateChatBadge, 5000);
 updateChatBadge();
 
+const currentUserRole = "{{ user.role }}";
 let notificationOffset = 0;
 const notificationLimit = 10;
 let notificationTotal = 0;
@@ -548,6 +585,7 @@ function renderNotifications(items, reset) {
   const list = document.getElementById("notificationList");
   const empty = document.getElementById("notificationEmpty");
   const loadMoreWrap = document.getElementById("notificationLoadMore");
+  const panel = document.getElementById("notificationPanel");
   if (!list || !empty) return;
   if (reset) {
     list.innerHTML = "";
@@ -563,11 +601,32 @@ function renderNotifications(items, reset) {
   items.forEach(item => {
     const row = document.createElement("div");
     row.className = "notification-item px-4 py-3 flex gap-3 items-start";
-    if (item.link) {
+    const isMeeting = (item.notif_type || '').toLowerCase() === 'meeting';
+    if (item.link || isMeeting) {
       row.classList.add('cursor-pointer');
       row.addEventListener('click', () => {
         markNotificationRead(item.id);
-        window.location.href = item.link;
+        if (isMeeting) {
+          if (currentUserRole === 'manager') {
+            panel?.classList.add('hidden');
+            window.location.href = '/manager/schedule_meeting';
+            return;
+          }
+          if (typeof window.openMeetingModal === 'function') {
+            panel?.classList.add('hidden');
+            window.openMeetingModal();
+            return;
+          }
+          const meetingToggle = document.getElementById('meetingToggle');
+          if (meetingToggle) {
+            panel?.classList.add('hidden');
+            meetingToggle.click();
+          }
+          return;
+        }
+        if (item.link) {
+          window.location.href = item.link;
+        }
       });
     }
 
@@ -596,14 +655,32 @@ function renderNotifications(items, reset) {
     body.appendChild(message);
     body.appendChild(time);
 
-    if (item.link) {
+    if (item.link || isMeeting) {
       const link = document.createElement("a");
-      link.href = item.link;
+      link.href = isMeeting ? '#' : item.link;
       link.className = "ml-auto text-[10px] font-black uppercase tracking-widest text-blue-600";
-      link.textContent = "View";
+      link.textContent = isMeeting ? "Open" : "View";
       link.addEventListener("click", (event) => {
         event.stopPropagation();
         markNotificationRead(item.id);
+        if (isMeeting) {
+          if (currentUserRole === 'manager') {
+            panel?.classList.add('hidden');
+            window.location.href = '/manager/schedule_meeting';
+            return;
+          }
+          if (typeof window.openMeetingModal === 'function') {
+            panel?.classList.add('hidden');
+            window.openMeetingModal();
+            return;
+          }
+          const meetingToggle = document.getElementById('meetingToggle');
+          if (meetingToggle) {
+            panel?.classList.add('hidden');
+            meetingToggle.click();
+          }
+          return;
+        }
       });
       row.appendChild(link);
     }
@@ -890,6 +967,8 @@ document.addEventListener("DOMContentLoaded", function() {
           meetingPolling = setInterval(() => loadMeetingPopup(meetingModalListUpcoming, meetingModalListPast, meetingModalEmptyUpcoming, meetingModalEmptyPast, meetingBadge), 60000);
         }
       }
+
+      window.openMeetingModal = openMeetingModal;
 
       function closeMeetingModal() {
         if (!meetingModal) return;
@@ -1231,6 +1310,8 @@ pastBtn.addEventListener('click', () => switchTab('past'));
       document.querySelectorAll('[data-ai-cal-remove]').forEach(btn => {
         btn.addEventListener('click', async () => {
           const id = Number(btn.getAttribute('data-ai-cal-remove'));
+          const ok = window.showConfirm ? await window.showConfirm('Remove this calendar item?') : confirm('Remove this calendar item?');
+          if (!ok) return;
           await fetch(`/api/calendar/${id}`, { method: 'DELETE' });
           calendarEventsCache = await fetchCalendarEvents();
           rebuildEventsIndex();

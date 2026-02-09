@@ -138,7 +138,10 @@ body {
   outline: none;
 }
 
-.search-input:focus { border-color: var(--accent-navy); ring: 2px solid #e2e8f0; }
+.search-input:focus {
+  border-color: var(--accent-navy);
+  box-shadow: 0 0 0 2px #e2e8f0;
+}
 
 .filter-tab {
   font-size: 0.7rem;
@@ -172,7 +175,7 @@ body {
     </div>
     
     <div class="flex items-center gap-3 mb-2">
-        <a href="/manager/dashboard" class="btn-exec btn-outline">← Exit to Console</a>
+        <a href="/manager/manage_teams" class="btn-exec btn-outline">← Exit to Console</a>
     </div>
 </div>
 
@@ -202,7 +205,7 @@ body {
                 <span class="project-status {% if project.status == 'active' %}status-active{% elif project.status == 'completed' %}status-completed{% else %}status-pending{% endif %}">
                   {{ project.status }}
                 </span>
-                <form action="/manager/projects/delete" method="POST" onsubmit="return confirm('Remove project {{ project.name }}?')" class="project-remove-form">
+                <form action="/manager/projects/delete" method="POST" data-confirm="Remove project {{ project.name }}?" class="project-remove-form">
                   <input type="hidden" name="project_id" value="{{ project.id }}">
                   <button type="submit" class="text-slate-300 hover:text-red-600" aria-label="Remove project {{ project.name }}">
                     <i class="bi bi-trash"></i>
@@ -246,9 +249,17 @@ body {
           <div class="p-4 bg-slate-50 border-b">
             <span class="label-mono">Operational Scope</span>
           </div>
-          <div class="p-8">
+          <div class="p-8 space-y-4">
             <p id="detail-description" class="text-slate-600 leading-relaxed text-lg"></p>
-            <div id="detail-created" class="mt-6 font-mono text-xs text-slate-400"></div>
+            <form id="projectDescriptionForm" class="space-y-3">
+              <label class="label-mono">Update Description</label>
+              <textarea id="projectDescriptionInput" rows="4" class="w-full px-4 py-3 border border-slate-200 outline-none text-sm resize-none" placeholder="Add or update project description..."></textarea>
+              <div class="flex items-center justify-between">
+                <span id="projectDescriptionStatus" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"></span>
+                <button type="submit" class="btn-exec btn-primary">Save Description</button>
+              </div>
+            </form>
+            <div id="detail-created" class="mt-2 font-mono text-xs text-slate-400"></div>
           </div>
         </div>
 
@@ -257,17 +268,40 @@ body {
               <div class="p-4 bg-slate-50 border-b">
                 <span class="label-mono">Deployed Personnel</span>
               </div>
-              <div class="p-6 flex flex-wrap gap-2" id="detail-employees-list"></div>
+              <div class="p-6 space-y-4">
+                <form id="projectAssignForm" class="space-y-3">
+                  <label class="label-mono">Assign Employee</label>
+                  <select id="projectAssignEmployee" class="w-full px-4 py-2 border border-slate-200 text-sm">
+                    <option value="">Select employee</option>
+                    {% for emp in employees %}
+                      <option value="{{ emp.employee_id }}">{{ emp.name }} ({{ emp.employee_id }})</option>
+                    {% endfor %}
+                  </select>
+                  <div class="flex items-center justify-between">
+                    <span id="projectAssignStatus" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"></span>
+                    <button type="submit" class="btn-exec btn-primary">Assign</button>
+                  </div>
+                </form>
+                <div class="flex flex-wrap gap-2" id="detail-employees-list"></div>
+              </div>
             </div>
 
             <div class="exec-card">
               <div class="p-4 bg-slate-50 border-b">
                 <span class="label-mono">Deployment Log</span>
               </div>
-              <div class="p-6" id="detail-tasks-list">
-                <div class="p-4 border border-dashed border-slate-200 rounded-lg text-center label-mono text-[10px]">
-                    Project specific tasks synchronized in Team Unit module
-                </div>
+              <div class="p-6 space-y-4">
+                <form id="projectTaskForm" class="space-y-3">
+                  <label class="label-mono">Add Project Task</label>
+                  <input type="text" id="projectTaskTitle" class="w-full px-4 py-2 border border-slate-200 text-sm" placeholder="Task title" required>
+                  <textarea id="projectTaskDescription" rows="3" class="w-full px-4 py-2 border border-slate-200 text-sm resize-none" placeholder="Task description"></textarea>
+                  <input type="date" id="projectTaskDeadline" class="w-full px-4 py-2 border border-slate-200 text-sm">
+                  <div class="flex items-center justify-between">
+                    <span id="projectTaskStatus" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"></span>
+                    <button type="submit" class="btn-exec btn-outline">Add Task</button>
+                  </div>
+                </form>
+                <div id="detail-tasks-list"></div>
               </div>
             </div>
         </div>
@@ -310,6 +344,150 @@ document.addEventListener('DOMContentLoaded', function() {
       populateProjectData();
     })
     .catch(err => console.error('Error fetching projects:', err));
+
+  const descriptionForm = document.getElementById('projectDescriptionForm');
+  const descriptionInput = document.getElementById('projectDescriptionInput');
+  const descriptionStatus = document.getElementById('projectDescriptionStatus');
+  if (descriptionForm) {
+    descriptionForm.addEventListener('submit', function(event) {
+      event.preventDefault();
+      if (!selectedProjectId) return;
+      const fd = new FormData();
+      fd.append('project_id', String(selectedProjectId));
+      fd.append('description', descriptionInput.value || '');
+      descriptionStatus.textContent = 'Saving...';
+      fetch('/manager/projects/update_description', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.ok) {
+            const project = allProjects.find(p => p.id === selectedProjectId);
+            if (project) project.description = data.description || '';
+            document.getElementById('detail-description').textContent = data.description || 'No description provided';
+            descriptionStatus.textContent = 'Saved';
+          } else {
+            descriptionStatus.textContent = 'Failed';
+          }
+          setTimeout(() => { descriptionStatus.textContent = ''; }, 2000);
+        })
+        .catch(() => {
+          descriptionStatus.textContent = 'Failed';
+          setTimeout(() => { descriptionStatus.textContent = ''; }, 2000);
+        });
+    });
+  }
+
+  const taskForm = document.getElementById('projectTaskForm');
+  const taskTitle = document.getElementById('projectTaskTitle');
+  const taskDescription = document.getElementById('projectTaskDescription');
+  const taskDeadline = document.getElementById('projectTaskDeadline');
+  const taskStatus = document.getElementById('projectTaskStatus');
+  if (taskForm) {
+    taskForm.addEventListener('submit', function(event) {
+      event.preventDefault();
+      if (!selectedProjectId) return;
+      if (!taskTitle.value.trim()) return;
+      const fd = new FormData();
+      fd.append('project_id', String(selectedProjectId));
+      fd.append('title', taskTitle.value.trim());
+      fd.append('description', taskDescription.value || '');
+      if (taskDeadline.value) fd.append('deadline', taskDeadline.value);
+      taskStatus.textContent = 'Adding...';
+      fetch('/manager/projects/add_task', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.ok) {
+            const project = allProjects.find(p => p.id === selectedProjectId);
+            if (project) {
+              project.tasks = project.tasks || [];
+              project.tasks.unshift(data.task);
+              project.task_count = (project.task_count || 0) + 1;
+            }
+            taskTitle.value = '';
+            taskDescription.value = '';
+            taskDeadline.value = '';
+            renderTaskList(project);
+            if (project) {
+              const detailTasks = document.getElementById('detail-tasks');
+              if (detailTasks) detailTasks.textContent = project.task_count;
+            }
+            populateProjectData();
+            taskStatus.textContent = 'Added';
+          } else {
+            taskStatus.textContent = 'Failed';
+          }
+          setTimeout(() => { taskStatus.textContent = ''; }, 2000);
+        })
+        .catch(() => {
+          taskStatus.textContent = 'Failed';
+          setTimeout(() => { taskStatus.textContent = ''; }, 2000);
+        });
+    });
+  }
+
+  const assignForm = document.getElementById('projectAssignForm');
+  const assignSelect = document.getElementById('projectAssignEmployee');
+  const assignStatus = document.getElementById('projectAssignStatus');
+  if (assignForm) {
+    assignForm.addEventListener('submit', function(event) {
+      event.preventDefault();
+      if (!selectedProjectId) return;
+      if (!assignSelect.value) return;
+      const fd = new FormData();
+      fd.append('project_id', String(selectedProjectId));
+      fd.append('employee_id', assignSelect.value);
+      assignStatus.textContent = 'Assigning...';
+      fetch('/manager/projects/assign_employee', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+          const project = allProjects.find(p => p.id === selectedProjectId);
+          if (data && data.ok && project) {
+            project.assigned_employees = data.assigned_employees || project.assigned_employees || [];
+            project.direct_assignments = data.direct_assignments || project.direct_assignments || [];
+            project.employee_count = data.employee_count;
+            renderAssignedEmployees(project);
+            const detailEmployees = document.getElementById('detail-employees');
+            if (detailEmployees) detailEmployees.textContent = project.employee_count;
+            populateProjectData();
+            assignStatus.textContent = 'Assigned';
+          } else {
+            assignStatus.textContent = (data && data.message) ? data.message : 'Failed';
+          }
+          setTimeout(() => { assignStatus.textContent = ''; }, 2000);
+        })
+        .catch(() => {
+          assignStatus.textContent = 'Failed';
+          setTimeout(() => { assignStatus.textContent = ''; }, 2000);
+        });
+    });
+  }
+
+  const employeeList = document.getElementById('detail-employees-list');
+  if (employeeList) {
+    employeeList.addEventListener('click', function(event) {
+      const btn = event.target.closest('[data-unassign-id]');
+      if (!btn || !selectedProjectId) return;
+      const employeeId = btn.getAttribute('data-unassign-id');
+      if (!employeeId) return;
+      const fd = new FormData();
+      fd.append('project_id', String(selectedProjectId));
+      fd.append('employee_id', employeeId);
+      fetch('/manager/projects/unassign_employee', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+          const project = allProjects.find(p => p.id === selectedProjectId);
+          if (data && data.ok && project) {
+            project.assigned_employees = data.assigned_employees || project.assigned_employees || [];
+            project.direct_assignments = data.direct_assignments || project.direct_assignments || [];
+            project.employee_count = data.employee_count;
+            renderAssignedEmployees(project);
+            const detailEmployees = document.getElementById('detail-employees');
+            if (detailEmployees) detailEmployees.textContent = project.employee_count;
+            populateProjectData();
+          }
+        })
+        .catch(() => {});
+    });
+  }
   
   // Search functionality
   document.getElementById('projectSearch').addEventListener('input', function(e) {
@@ -363,28 +541,70 @@ function selectProject(projectId) {
   document.getElementById('detail-employees').textContent = project.employee_count;
   document.getElementById('detail-status').textContent = project.status.toUpperCase().charAt(0) + project.status.slice(1);
   document.getElementById('detail-description').textContent = project.description || 'No description provided';
+  const descriptionInput = document.getElementById('projectDescriptionInput');
+  if (descriptionInput) {
+    descriptionInput.value = project.description || '';
+  }
   
   const createdDate = new Date(project.created_at);
   document.getElementById('detail-created').textContent = 
     'Created on ' + createdDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   
   // Populate employees
-  const empList = document.getElementById('detail-employees-list');
-  if (project.assigned_employees.length > 0) {
-    empList.innerHTML = project.assigned_employees.map(emp => 
-      '<div class="employee-tag">' + emp + '</div>'
-    ).join('');
-  } else {
-    empList.innerHTML = '<p class="text-sm text-slate-500">No employees assigned to this project</p>';
-  }
+  renderAssignedEmployees(project);
   
-  // Populate tasks (placeholder - would need task details from API)
-  const taskList = document.getElementById('detail-tasks-list');
-  if (project.task_count > 0) {
-    taskList.innerHTML = '<div class="task-item">📌 View detailed task list by going to the team overview page</div>';
-  } else {
-    taskList.innerHTML = '<p class="text-sm text-slate-500">No tasks in this project</p>';
+  renderTaskList(project);
+}
+
+function renderAssignedEmployees(project) {
+  const empList = document.getElementById('detail-employees-list');
+  if (!empList || !project) return;
+  const employees = Array.isArray(project.assigned_employees) ? project.assigned_employees : [];
+  const directAssignments = Array.isArray(project.direct_assignments) ? project.direct_assignments : [];
+  const directNames = new Set(directAssignments.map(item => item.name));
+
+  if (employees.length === 0 && directAssignments.length === 0) {
+    empList.innerHTML = '<p class="text-sm text-slate-500">No employees assigned to this project</p>';
+    return;
   }
+
+  const directTags = directAssignments.map(item => {
+    return (
+      '<div class="employee-tag flex items-center gap-2">' +
+        '<span>' + item.name + '</span>' +
+        '<button type="button" class="text-slate-400 hover:text-red-600" data-unassign-id="' + item.employee_id + '">x</button>' +
+      '</div>'
+    );
+  });
+
+  const otherTags = employees
+    .filter(name => !directNames.has(name))
+    .map(name => '<div class="employee-tag">' + name + '</div>');
+
+  empList.innerHTML = directTags.concat(otherTags).join('');
+}
+
+function renderTaskList(project) {
+  const taskList = document.getElementById('detail-tasks-list');
+  if (!taskList || !project) return;
+  const tasks = Array.isArray(project.tasks) ? project.tasks : [];
+  if (tasks.length === 0) {
+    taskList.innerHTML = '<p class="text-sm text-slate-500">No tasks in this project</p>';
+    return;
+  }
+  taskList.innerHTML = tasks.map(task => {
+    const deadline = task.deadline ? new Date(task.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'No deadline';
+    return `
+      <div class="border border-slate-200 rounded-lg p-4 mb-3">
+        <div class="flex items-center justify-between">
+          <div class="font-bold text-slate-900">${task.title}</div>
+          <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">${task.status}</span>
+        </div>
+        <div class="text-xs text-slate-600 mt-2">${task.description || ''}</div>
+        <div class="text-[10px] text-slate-400 mt-2">Deadline: ${deadline}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 function filterProjects(status) {

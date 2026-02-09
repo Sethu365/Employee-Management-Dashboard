@@ -7,8 +7,8 @@ import datetime
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from database import SessionLocal
-from models import EmailSettings, User
+from .database import SessionLocal
+from .models import EmailSettings, User
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates"

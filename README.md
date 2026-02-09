@@ -101,7 +101,7 @@ DATABASE_URL=" <-- your database url --> "
 
 ```bash
 # Start with auto-reload for development
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 Open your browser and go to: `http://127.0.0.1:8000`
@@ -109,7 +109,7 @@ Open your browser and go to: `http://127.0.0.1:8000`
 For network access on your LAN:
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ---

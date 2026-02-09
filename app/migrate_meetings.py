@@ -5,7 +5,8 @@ Run this script once to update your database schema
 """
 
 from sqlalchemy import text
-from database import SessionLocal
+from .database import SessionLocal
+from .models import Meeting
 
 def migrate():
     db = SessionLocal()
