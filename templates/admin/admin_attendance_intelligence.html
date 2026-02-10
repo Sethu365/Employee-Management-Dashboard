@@ -4,14 +4,20 @@
 {% block content %}
 <div class="max-w-7xl mx-auto p-8 space-y-8">
 
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-4xl font-black text-slate-900">
-        Attendance Intelligence
-      </h1>
-      <p class="text-sm text-slate-500 mt-2">
-        Analytics & anomaly detection from RFID logs
-      </p>
+  <h1 class="text-3xl font-black text-slate-900">
+    Attendance Behavior Intelligence
+  </h1>
+
+  
+  <p class="text-sm text-slate-500">
+    Analytics derived from RFID attendance logs
+  </p>
+
+  <!-- METRICS -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white border p-6">
+      <p class="text-xs uppercase text-slate-400">Average Login Hour</p>
+      <p class="text-2xl font-black">{{ metrics.average_login_hour }}</p>
     </div>
     {% if user.role in ('admin', 'manager') %}
       <div class="w-72">

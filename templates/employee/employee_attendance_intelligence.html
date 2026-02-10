@@ -2,8 +2,24 @@
 {% block page_title %}My Attendance Intelligence{% endblock %}
 
 {% block content %}
+
 <div class="max-w-6xl mx-auto p-8 space-y-8">
 
+  <h1 class="text-3xl font-black text-slate-900">
+    Attendance Behavior Intelligence
+  </h1>
+
+  <p class="text-sm text-slate-500">
+    Analytics derived from RFID attendance logs
+  </p>
+
+  
+  <!-- METRICS -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white border p-6">
+      <p class="text-xs uppercase text-slate-400">Average Login Hour</p>
+      <p class="text-2xl font-black">{{ metrics.average_login_hour }}</p>
+    </div>
   <div>
     <h1 class="text-4xl font-black text-slate-900">
       Your Attendance Statistics
